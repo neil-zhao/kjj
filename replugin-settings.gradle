@@ -1,4 +1,5 @@
-import com.android.build.gradle.AppPlugin
+// import com.android.build.gradle.AppPlugin
+import java.util.regex.Pattern
 
 //先加载local.properties文件
 Properties localProperties = new Properties()

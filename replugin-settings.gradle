@@ -1,0 +1,48 @@
+import com.android.build.gradle.AppPlugin
+
+//先加载local.properties文件
+Properties localProperties = new Properties()
+try {
+    def localFile = project.rootProject.file('local.properties')
+    if (localFile != null && localFile.exists()) {
+        localProperties.load(localFile.newDataInputStream())
+    }
+} catch (Exception ignored) {
+    println("local.properties not found")
+}
+
+//新增插件依赖方式功能描述
+//当前module为application时
+//打包插件可选依赖方式：1、开发阶段implementation 2、providedAar(发布阶段)
+//当前module为library时
+//打包插件可选依赖方式：1、开发阶段implementation 2、compileOnly(发布阶段)
+//projectDepency：是否为projectDepency项目依赖，默认为maven依赖
+ext.addPluginComponent = { dependencyName, projectDepency = false,ext=null ->
+    def dependencyMode
+    rootProject.ext.isBuildPlugin = 'true' == localProperties.getProperty("isBuildPlugin")
+    def buildPluginDebug ='true' == localProperties.getProperty("buildPluginDebug")
+    def isApp = project.plugins.hasPlugin(AppPlugin)//是否为application
+
+    println "replugin-settings >>>> the module ${project.name} is app:${isApp} isBuildPlugin:${rootProject.ext.isBuildPlugin}"
+    if(isApp){
+        dependencyMode = buildPluginDebug ? 'implementation' : 'providedAar'
+    }else{
+        dependencyMode = buildPluginDebug ? 'implementation' : 'compileOnly'
+    }
+    if(dependencyName.contains("droidcore")){
+        dependencyName = buildPluginDebug ? rootProject.ext.droidcore : rootProject.ext.droidcore_only
+        dependencyMode='implementation'
+    }
+    if(ext){
+        project.dependencies.add(dependencyMode, dependencyName)
+        println "replugin-settings >>>> add $dependencyName to ${project.name}'s dependencies,dependencyMode is ${dependencyMode}"
+    }else{
+        if (projectDepency) {//项目依赖
+            project.dependencies.add(dependencyMode, project("$dependencyName"))
+            println "replugin-settings >>>> add project(\"$dependencyName\") to ${project.name}'s dependencies,dependencyMode is ${dependencyMode}"
+        }else{//默认为maven依赖
+            project.dependencies.add(dependencyMode, dependencyName)
+            println "replugin-settings >>>> add $dependencyName to ${project.name}'s dependencies,dependencyMode is ${dependencyMode}"
+        }
+    }
+}
